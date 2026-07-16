@@ -3,6 +3,12 @@ import json
 import string
 from typing import TypedDict
 
+def preprocess_text(text: str, stopwords: list[str] = []) -> list[str]:
+    text = text.lower()
+    text = text.translate(str.maketrans({x: "" for x in string.punctuation}))
+    tokens = text.split(" ")
+    return [t for t in tokens if t not in stopwords]
+
 def tokens_match(text_tokens: list[str], query_tokens: list[str]) -> bool:
     for t in text_tokens:
         for q in query_tokens:
@@ -25,10 +31,13 @@ def main() -> None:
             movie_file = open(movie_file_path)
             Movie = TypedDict("Movie", {"id": int, "title": str, "description": str})
             movies: list[Movie] = json.load(movie_file)["movies"]
+
+            stopwords = open("./data/stopwords.txt").read().replace("\n", " ")
+            stopwords = preprocess_text(stopwords)
             def matches(text: str, query: str) -> bool:
-                text = text.lower()
-                text = text.translate(str.maketrans({x: "" for x in string.punctuation}))
-                return tokens_match(text.split(" "), query.split(" "))
+                text_tokens = preprocess_text(text, stopwords)
+                query_tokens = preprocess_text(query, stopwords)
+                return tokens_match(text_tokens, query_tokens)
             query = args.query
             print(f"Searching for: {query}")
             matched_movies = [movie["title"] for movie in movies if matches(movie["title"], query)][:5]
