@@ -2,6 +2,7 @@ import os
 import pickle
 import string
 from collections import defaultdict
+from typing import Counter
 
 from nltk.stem import PorterStemmer
 
@@ -16,10 +17,12 @@ from .search_utils import (
 
 class InvertedIndex:
     def __init__(self) -> None:
-        self.index = defaultdict(set)
+        self.index: defaultdict[str, set[int]] = defaultdict(set[int])
         self.docmap: dict[int, Movie] = {}
+        self.term_frequencies: defaultdict[int, Counter[str]] = defaultdict(Counter[str])
         self.index_path = os.path.join(CACHE_DIR, "index.pkl")
         self.docmap_path = os.path.join(CACHE_DIR, "docmap.pkl")
+        self.term_frequencies_path = os.path.join(CACHE_DIR, "term_frequencies.pkl")
 
     def build(self) -> None:
         movies = load_movies()
@@ -35,15 +38,21 @@ class InvertedIndex:
             pickle.dump(self.index, f)
         with open(self.docmap_path, "wb") as f:
             pickle.dump(self.docmap, f)
+        with open(self.term_frequencies_path, "wb") as f:
+            pickle.dump(self.term_frequencies, f)
 
     def get_documents(self, term: str) -> list[int]:
         doc_ids = self.index.get(term, set())
         return sorted(list(doc_ids))
 
+    def get_tf(self, doc_id: int, term: str) -> int:
+        return self.term_frequencies[doc_id].get(term, 0)
+
     def __add_document(self, doc_id: int, text: str) -> None:
         tokens = tokenize_text(text)
-        for token in set(tokens):
+        for token in tokens:
             self.index[token].add(doc_id)
+            self.term_frequencies[doc_id][token] += 1
     
     def load(self):
         def get_obj(path: str):
@@ -53,6 +62,8 @@ class InvertedIndex:
                 return pickle.load(file)
         self.index = get_obj(self.index_path)
         self.docmap = get_obj(self.docmap_path)
+        self.term_frequencies = get_obj(self.term_frequencies_path)
+
 
 def build_command() -> None:
     idx = InvertedIndex()
@@ -78,12 +89,15 @@ def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[Movie]
     return results[:min(len(results), limit)]
 
 
-def has_matching_token(query_tokens: list[str], title_tokens: list[str]) -> bool:
-    for query_token in query_tokens:
-        for title_token in title_tokens:
-            if query_token in title_token:
-                return True
-    return False
+def tf_command(doc_id: int, term: str):
+    term = get_single_token(term)
+    idx = InvertedIndex()
+    try:
+        idx.load()
+    except Exception as e:
+        print(e)
+        return
+    print(idx.get_tf(doc_id, term))
 
 
 def preprocess_text(text: str) -> str:
@@ -116,3 +130,9 @@ def tokenize_text(text: str) -> list[str]:
     for word in filtered_words:
         stemmed_words.append(stemmer.stem(word))
     return stemmed_words
+
+def get_single_token(text: str) -> str:
+    tokens = tokenize_text(text)
+    if len(tokens) != 1:
+        raise Exception(f"{text} is more than one token")
+    return tokens[0]
