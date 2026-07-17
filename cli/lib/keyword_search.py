@@ -53,7 +53,12 @@ class InvertedIndex:
         total_doc_count = len(self.docmap)
         term_match_doc_count = len(self.index[term])
         return math.log((total_doc_count + 1) / (term_match_doc_count + 1))
-    
+
+    def get_bm25idf(self, term: str) -> float:
+        total_doc_count = len(self.docmap)
+        term_match_doc_count = len(self.index[term])
+        return math.log((total_doc_count - term_match_doc_count + 0.5) / (term_match_doc_count + 0.5) + 1)
+
     def get_tfidf(self, doc_id: int, term: str) -> float:
         return self.get_tf(doc_id, term) * self.get_idf(term)
 
@@ -62,7 +67,7 @@ class InvertedIndex:
         for token in tokens:
             self.index[token].add(doc_id)
             self.term_frequencies[doc_id][token] += 1
-    
+
     def load(self):
         def get_obj(path: str):
             if not os.path.isfile(path):
@@ -119,6 +124,18 @@ def idf_command(term: str):
         print(e)
         return
     print(f"Inverse document frequency of '{term}': {idx.get_idf(token):.2f}")
+
+
+def bm25idf_command(term: str):
+    token = ""
+    idx = InvertedIndex()
+    try:
+        token = get_single_token(term)
+        idx.load()
+    except Exception as e:
+        print(e)
+        return
+    print(f"BM25 IDF score of '{term}': {idx.get_bm25idf(token):.2f}")
 
 
 def tfidf_command(doc_id: int, term: str):
