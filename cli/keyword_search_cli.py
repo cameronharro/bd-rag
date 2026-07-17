@@ -1,6 +1,6 @@
 import argparse
 
-from lib.search_utils import BM25_K1
+from lib.search_utils import BM25_B, BM25_K1
 from lib.keyword_search import bm25idf_command, bm25tf_command, build_command, idf_command, search_command, tf_command, tfidf_command
 
 
@@ -27,6 +27,7 @@ def main() -> None:
     bm25tf_parser.add_argument("doc_id", type=int, help="Document ID")
     bm25tf_parser.add_argument("term", type=str, help="The term to retrieve")
     bm25tf_parser.add_argument("k1", type=float, nargs='?', default=BM25_K1, help="Tunable BM25 K1 parameter")
+    bm25tf_parser.add_argument("b", type=float, nargs='?', default=BM25_B, help="Tunable BM25 B parameter")
 
     tfidf_parser = subparsers.add_parser("tfidf", help="Get the frequency that a term appears in a given document")
     tfidf_parser.add_argument("doc_id", type=int, help="Document ID")
@@ -57,7 +58,7 @@ def main() -> None:
                 bm25idf_command(args.term)
                 return
             case "bm25tf":
-                bm25tf_command(args.doc_id, args.term, args.k1)
+                bm25tf_command(args.doc_id, args.term, args.k1, args.b)
                 return
             case "tfidf":
                 tfidf_command(args.doc_id, args.term)
