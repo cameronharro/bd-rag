@@ -8,6 +8,7 @@ from typing import Counter
 from nltk.stem import PorterStemmer
 
 from .search_utils import (
+    BM25_K1,
     CACHE_DIR,
     DEFAULT_SEARCH_LIMIT,
     STOPWORDS_PATH,
@@ -49,6 +50,10 @@ class InvertedIndex:
     def get_tf(self, doc_id: int, term: str) -> int:
         return self.term_frequencies[doc_id].get(term, 0)
 
+    def get_bm25tf(self, doc_id: int, term: str, k1: float = BM25_K1) -> float:
+        tf = self.get_tf(doc_id, term)
+        return (tf * (k1 + 1)) / (tf + k1)
+
     def get_idf(self, term: str) -> float:
         total_doc_count = len(self.docmap)
         term_match_doc_count = len(self.index[term])
@@ -87,11 +92,7 @@ def build_command() -> None:
 
 def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[Movie]:
     idx = InvertedIndex()
-    try:
-        idx.load()
-    except Exception as e:
-        print(e)
-        return []
+    idx.load()
     query_tokens = tokenize_text(query)
     results = []
     for q in query_tokens:
@@ -106,47 +107,36 @@ def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[Movie]
 def tf_command(doc_id: int, term: str):
     term = get_single_token(term)
     idx = InvertedIndex()
-    try:
-        idx.load()
-    except Exception as e:
-        print(e)
-        return
+    idx.load()
     print(idx.get_tf(doc_id, term))
 
 
-def idf_command(term: str):
-    token = ""
+def bm25tf_command(doc_id: int, term: str, k1: float):
+    token = get_single_token(term)
     idx = InvertedIndex()
-    try:
-        token = get_single_token(term)
-        idx.load()
-    except Exception as e:
-        print(e)
-        return
+    idx.load()
+    bm25tf = idx.get_bm25tf(doc_id, token, k1)
+    print(f"BM25 TF score of '{term}' in document '{doc_id}': {bm25tf:.2f}")
+
+
+def idf_command(term: str):
+    token = get_single_token(term)
+    idx = InvertedIndex()
+    idx.load()
     print(f"Inverse document frequency of '{term}': {idx.get_idf(token):.2f}")
 
 
 def bm25idf_command(term: str):
-    token = ""
+    token = get_single_token(term)
     idx = InvertedIndex()
-    try:
-        token = get_single_token(term)
-        idx.load()
-    except Exception as e:
-        print(e)
-        return
+    idx.load()
     print(f"BM25 IDF score of '{term}': {idx.get_bm25idf(token):.2f}")
 
 
 def tfidf_command(doc_id: int, term: str):
-    token = ""
+    token = get_single_token(term)
     idx = InvertedIndex()
-    try:
-        token = get_single_token(term)
-        idx.load()
-    except Exception as e:
-        print(e)
-        return
+    idx.load()
     print(f"TF-IDF score of '{term}' in document '{doc_id}': {idx.get_tfidf(doc_id, token):.2f}")
 
 

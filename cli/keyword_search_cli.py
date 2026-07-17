@@ -1,6 +1,7 @@
 import argparse
 
-from lib.keyword_search import bm25idf_command, build_command, idf_command, search_command, tf_command, tfidf_command
+from lib.search_utils import BM25_K1
+from lib.keyword_search import bm25idf_command, bm25tf_command, build_command, idf_command, search_command, tf_command, tfidf_command
 
 
 def main() -> None:
@@ -12,15 +13,20 @@ def main() -> None:
     search_parser = subparsers.add_parser("search", help="Search movies using BM25")
     search_parser.add_argument("query", type=str, help="Search query")
 
-    tf_parser = subparsers.add_parser("tf", help="Get the frequency that a term appears in a given document")
+    tf_parser = subparsers.add_parser("tf", help="Get the frequency of a term in a given document")
     tf_parser.add_argument("doc_id", type=int, help="Document ID")
     tf_parser.add_argument("term", type=str, help="The term to retrieve")
 
     idf_parser = subparsers.add_parser("idf", help="Get the inverse document frequency of a given term")
     idf_parser.add_argument("term", type=str, help="The term to retrieve")
 
-    bm25idf_parser = subparsers.add_parser("bm25idf", help="Get the inverse document frequency of a given term")
+    bm25idf_parser = subparsers.add_parser("bm25idf", help="Get the BM25 inverse document frequency of a given term")
     bm25idf_parser.add_argument("term", type=str, help="The term to retrieve")
+
+    bm25tf_parser = subparsers.add_parser("bm25tf", help="Get the BM25 frequency of a term in a given document")
+    bm25tf_parser.add_argument("doc_id", type=int, help="Document ID")
+    bm25tf_parser.add_argument("term", type=str, help="The term to retrieve")
+    bm25tf_parser.add_argument("k1", type=float, nargs='?', default=BM25_K1, help="Tunable BM25 K1 parameter")
 
     tfidf_parser = subparsers.add_parser("tfidf", help="Get the frequency that a term appears in a given document")
     tfidf_parser.add_argument("doc_id", type=int, help="Document ID")
@@ -28,32 +34,38 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    match args.command:
-        case "build":
-            print("Building inverted index...")
-            build_command()
-            print("Inverted index built successfully.")
-            return
-        case "search":
-            print("Searching for:", args.query)
-            results = search_command(args.query)
-            for i, res in enumerate(results, 1):
-                print(f"{i}. ({res['id']}) {res['title']}")
-            return
-        case "tf":
-            tf_command(args.doc_id, args.term)
-            return
-        case "idf":
-            idf_command(args.term)
-            return
-        case "bm25idf":
-            bm25idf_command(args.term)
-            return
-        case "tfidf":
-            tfidf_command(args.doc_id, args.term)
-            return
-        case _:
-            parser.print_help()
+    try:
+        match args.command:
+            case "build":
+                print("Building inverted index...")
+                build_command()
+                print("Inverted index built successfully.")
+                return
+            case "search":
+                print("Searching for:", args.query)
+                results = search_command(args.query)
+                for i, res in enumerate(results, 1):
+                    print(f"{i}. ({res['id']}) {res['title']}")
+                return
+            case "tf":
+                tf_command(args.doc_id, args.term)
+                return
+            case "idf":
+                idf_command(args.term)
+                return
+            case "bm25idf":
+                bm25idf_command(args.term)
+                return
+            case "bm25tf":
+                bm25tf_command(args.doc_id, args.term, args.k1)
+                return
+            case "tfidf":
+                tfidf_command(args.doc_id, args.term)
+                return
+            case _:
+                parser.print_help()
+    except Exception as e:
+        print(e)
 
 
 if __name__ == "__main__":
