@@ -1,3 +1,4 @@
+import math
 import os
 import pickle
 import string
@@ -98,6 +99,20 @@ def tf_command(doc_id: int, term: str):
         print(e)
         return
     print(idx.get_tf(doc_id, term))
+
+
+def idf_command(term: str):
+    token = get_single_token(term)
+    idx = InvertedIndex()
+    try:
+        idx.load()
+    except Exception as e:
+        print(e)
+        return
+    total_doc_count = len(idx.docmap)
+    term_match_doc_count = len(idx.index[token])
+    idf = math.log((total_doc_count + 1) / (term_match_doc_count + 1))
+    print(f"Inverse document frequency of '{term}': {idf:.2f}")
 
 
 def preprocess_text(text: str) -> str:
