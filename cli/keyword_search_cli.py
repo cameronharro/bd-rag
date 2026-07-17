@@ -1,6 +1,6 @@
 import argparse
 
-from lib.keyword_search import build_command, idf_command, search_command, tf_command
+from lib.keyword_search import build_command, idf_command, search_command, tf_command, tfidf_command
 
 
 def main() -> None:
@@ -18,6 +18,10 @@ def main() -> None:
 
     idf_parser = subparsers.add_parser("idf", help="Get the inverse document frequency of a given term")
     idf_parser.add_argument("term", type=str, help="The term to retrieve")
+
+    tfidf_parser = subparsers.add_parser("tfidf", help="Get the frequency that a term appears in a given document")
+    tfidf_parser.add_argument("doc_id", type=int, help="Document ID")
+    tfidf_parser.add_argument("term", type=str, help="The term to retrieve")
 
     args = parser.parse_args()
 
@@ -38,6 +42,9 @@ def main() -> None:
             return
         case "idf":
             idf_command(args.term)
+            return
+        case "tfidf":
+            tfidf_command(args.doc_id, args.term)
         case _:
             parser.print_help()
 

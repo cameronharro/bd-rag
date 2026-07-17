@@ -49,6 +49,14 @@ class InvertedIndex:
     def get_tf(self, doc_id: int, term: str) -> int:
         return self.term_frequencies[doc_id].get(term, 0)
 
+    def get_idf(self, term: str) -> float:
+        total_doc_count = len(self.docmap)
+        term_match_doc_count = len(self.index[term])
+        return math.log((total_doc_count + 1) / (term_match_doc_count + 1))
+    
+    def get_tfidf(self, doc_id: int, term: str) -> float:
+        return self.get_tf(doc_id, term) * self.get_idf(term)
+
     def __add_document(self, doc_id: int, text: str) -> None:
         tokens = tokenize_text(text)
         for token in tokens:
@@ -102,17 +110,27 @@ def tf_command(doc_id: int, term: str):
 
 
 def idf_command(term: str):
-    token = get_single_token(term)
+    token = ""
     idx = InvertedIndex()
     try:
+        token = get_single_token(term)
         idx.load()
     except Exception as e:
         print(e)
         return
-    total_doc_count = len(idx.docmap)
-    term_match_doc_count = len(idx.index[token])
-    idf = math.log((total_doc_count + 1) / (term_match_doc_count + 1))
-    print(f"Inverse document frequency of '{term}': {idf:.2f}")
+    print(f"Inverse document frequency of '{term}': {idx.get_idf(token):.2f}")
+
+
+def tfidf_command(doc_id: int, term: str):
+    token = ""
+    idx = InvertedIndex()
+    try:
+        token = get_single_token(term)
+        idx.load()
+    except Exception as e:
+        print(e)
+        return
+    print(f"TF-IDF score of '{term}' in document '{doc_id}': {idx.get_tfidf(doc_id, token):.2f}")
 
 
 def preprocess_text(text: str) -> str:
