@@ -14,6 +14,7 @@ from .search_utils import (
     DEFAULT_SEARCH_LIMIT,
     STOPWORDS_PATH,
     Movie,
+    SearchResult,
     load_movies,
 )
 
@@ -97,6 +98,31 @@ class InvertedIndex:
     def get_tfidf(self, doc_id: int, term: str) -> float:
         return self.get_tf(doc_id, term) * self.get_idf(term)
 
+    def bm25(self, doc_id: int, term: str) -> float:
+        return self.get_bm25tf(doc_id, term) * self.get_bm25idf(term)
+
+    def bm25_search(self, query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[SearchResult]:
+        tokens = tokenize_text(query)
+        scores: dict[int, float] = {}
+        for id in self.docmap.keys():
+            score = 0
+            for token in tokens:
+                score += self.bm25(id, token)
+            scores[id] = score
+        sorted_scores = sorted(scores.items(), key=lambda item: item[1], reverse=True)[:limit]
+        result: list[SearchResult] = []
+        for score in sorted_scores:
+            id, score_val = score
+            movie = self.docmap[id]
+            result.append({
+                "id": id,
+                "score": score_val,
+                "document": movie["description"],
+                "title": movie["title"],
+                "metadata": {}
+                })
+        return result
+
 
 def build_command() -> None:
     idx = InvertedIndex()
@@ -152,6 +178,14 @@ def tfidf_command(doc_id: int, term: str):
     idx = InvertedIndex()
     idx.load()
     print(f"TF-IDF score of '{term}' in document '{doc_id}': {idx.get_tfidf(doc_id, token):.2f}")
+
+
+def bmd25search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT):
+    idx = InvertedIndex()
+    idx.load()
+    top = idx.bm25_search(query, limit)
+    for i, result in enumerate(top, 1):
+        print(f"{i}. ({result["id"]}) {result["title"]} - Score: {result["score"]:.2f}")
 
 
 def preprocess_text(text: str) -> str:

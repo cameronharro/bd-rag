@@ -1,7 +1,7 @@
 import argparse
 
-from lib.search_utils import BM25_B, BM25_K1
-from lib.keyword_search import bm25idf_command, bm25tf_command, build_command, idf_command, search_command, tf_command, tfidf_command
+from lib.search_utils import BM25_B, BM25_K1, DEFAULT_SEARCH_LIMIT
+from lib.keyword_search import bm25idf_command, bm25tf_command, bmd25search_command, build_command, idf_command, search_command, tf_command, tfidf_command
 
 
 def main() -> None:
@@ -33,6 +33,10 @@ def main() -> None:
     tfidf_parser.add_argument("doc_id", type=int, help="Document ID")
     tfidf_parser.add_argument("term", type=str, help="The term to retrieve")
 
+    bm25search_parser = subparsers.add_parser("bm25search", help="Search movies using full BM25 scoring")
+    bm25search_parser.add_argument("query", type=str, help="Search query")
+    bm25search_parser.add_argument("limit", type=int, nargs="?", default=DEFAULT_SEARCH_LIMIT, help="Search limit")
+
     args = parser.parse_args()
 
     try:
@@ -63,6 +67,8 @@ def main() -> None:
             case "tfidf":
                 tfidf_command(args.doc_id, args.term)
                 return
+            case "bm25search":
+                bmd25search_command(args.query, args.limit)
             case _:
                 parser.print_help()
     except Exception as e:
