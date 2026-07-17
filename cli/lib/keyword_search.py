@@ -44,7 +44,15 @@ class InvertedIndex:
         tokens = tokenize_text(text)
         for token in set(tokens):
             self.index[token].add(doc_id)
-
+    
+    def load(self):
+        def get_obj(path: str):
+            if not os.path.isfile(path):
+                raise Exception(f"No file at {path}")
+            with open(path, "rb") as file:
+                return pickle.load(file)
+        self.index = get_obj(self.index_path)
+        self.docmap = get_obj(self.docmap_path)
 
 def build_command() -> None:
     idx = InvertedIndex()
@@ -52,18 +60,22 @@ def build_command() -> None:
     idx.save()
 
 
-def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[dict]:
-    movies = load_movies()
+def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[Movie]:
+    idx = InvertedIndex()
+    try:
+        idx.load()
+    except Exception as e:
+        print(e)
+        return []
+    query_tokens = tokenize_text(query)
     results = []
-    for movie in movies:
-        query_tokens = tokenize_text(query)
-        title_tokens = tokenize_text(movie["title"])
-        if has_matching_token(query_tokens, title_tokens):
-            results.append(movie)
-            if len(results) >= limit:
-                break
+    for q in query_tokens:
+        for id in idx.get_documents(q):
+            results.append(idx.docmap[id])
+        if len(results) >= limit:
+            break
 
-    return results
+    return results[:min(len(results), limit)]
 
 
 def has_matching_token(query_tokens: list[str], title_tokens: list[str]) -> bool:
