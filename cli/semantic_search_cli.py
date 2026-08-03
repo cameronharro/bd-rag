@@ -13,6 +13,9 @@ def main() -> None:
 
     subparsers.add_parser("verify_embeddings", help="Verify embedding generation from movies dataset")
 
+    embed_query_parser = subparsers.add_parser("embed_query", help="Embed a particular query string")
+    embed_query_parser.add_argument("query", help="The query to be embedded")
+
     args = parser.parse_args()
     match args.command:
         case "verify":
@@ -21,6 +24,8 @@ def main() -> None:
             semantic_search.embed_text(args.text)
         case "verify_embeddings":
             semantic_search.verify_embeddings()
+        case "embed_query":
+            semantic_search.embed_query_text(args.query)
         case _:
             parser.print_help()
 
