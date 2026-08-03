@@ -11,12 +11,16 @@ def main() -> None:
     embed_text_parser = subparsers.add_parser("embed_text", help="Embeds text using the configured model")
     embed_text_parser.add_argument("text", type=str, help="The text to embed")
 
+    subparsers.add_parser("verify_embeddings", help="Verify embedding generation from movies dataset")
+
     args = parser.parse_args()
     match args.command:
         case "verify":
             semantic_search.verify_model()
         case "embed_text":
             semantic_search.embed_text(args.text)
+        case "verify_embeddings":
+            semantic_search.verify_embeddings()
         case _:
             parser.print_help()
 
