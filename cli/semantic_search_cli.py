@@ -14,7 +14,11 @@ def main() -> None:
     subparsers.add_parser("verify_embeddings", help="Verify embedding generation from movies dataset")
 
     embed_query_parser = subparsers.add_parser("embed_query", help="Embed a particular query string")
-    embed_query_parser.add_argument("query", help="The query to be embedded")
+    embed_query_parser.add_argument("query", type=str, help="The query to be embedded")
+
+    search_parser = subparsers.add_parser("search", help="Search through the dataset with a specific query")
+    search_parser.add_argument("query", type=str, help="The query to be embedded")
+    search_parser.add_argument("--limit", type=int, default=5, help="The number of results to show")
 
     args = parser.parse_args()
     match args.command:
@@ -26,6 +30,8 @@ def main() -> None:
             semantic_search.verify_embeddings()
         case "embed_query":
             semantic_search.embed_query_text(args.query)
+        case "search":
+            semantic_search.search(args.query, args.limit)
         case _:
             parser.print_help()
 
