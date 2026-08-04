@@ -98,16 +98,18 @@ def search(query: str, limit: int):
     for i, result in enumerate(results):
         print(f"{i + 1}. {result["title"]} (score: {result["score"]})\n  {result["document"]}\n")
 
-def chunk(text: str, chunk_size: int):
+def chunk(text: str, chunk_size: int, overlap: int):
     text = text.strip()
     words = text.split(" ")
     result: list[str] = []
-    start = 0
-    while start < len(words):
-        chunk_length = min(chunk_size, len(words) - start)
-        chunk = " ".join(words[start:start+chunk_length])
+    chunk_start = 0
+    while chunk_start < len(words):
+        chunk_length = min(chunk_size, len(words) - chunk_start)
+        expanded_start = max(0, chunk_start - overlap)
+        expanded_end = min(len(words), chunk_start+chunk_length+overlap)
+        chunk = " ".join(words[expanded_start:expanded_end])
         result.append(chunk)
-        start += chunk_length
+        chunk_start += chunk_length
 
     print(f"Chunking {len(text)} characters")
     for i, chunk in enumerate(result):
