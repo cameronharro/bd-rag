@@ -32,6 +32,10 @@ def main() -> None:
 
     subparsers.add_parser("embed_chunks", help="Creates vector embeddings for semantically-chunked data")
 
+    search_chunked_parser = subparsers.add_parser("search_chunked", help="Search through chunked movie data")
+    search_chunked_parser.add_argument("query", type=str, help="The query to search for")
+    search_chunked_parser.add_argument("--limit", type=int, default=5, help="The number of results to return")
+
     args = parser.parse_args()
     match args.command:
         case "verify":
@@ -50,6 +54,8 @@ def main() -> None:
             semantic_search.semantic_chunk(args.text, args.max_chunk_size, args.overlap)
         case "embed_chunks":
             semantic_search.embed_chunks()
+        case "search_chunked":
+            semantic_search.search_chunked(args.query, args.limit)
         case _:
             parser.print_help()
 

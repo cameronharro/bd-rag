@@ -21,6 +21,11 @@ class ChunkMetadata(TypedDict):
     chunk_idx: int
     total_chunks: int
 
+class ChunkScore(TypedDict):
+    chunk_idx: int
+    movie_idx: int
+    score: float
+
 
 class GoldenTestCase(TypedDict):
     query: str
@@ -82,7 +87,7 @@ def format_search_result(
     return {
         "id": doc_id,
         "title": title,
-        "document": document,
+        "document": document[:DOCUMENT_PREVIEW_LENGTH],
         "score": round(score, SCORE_PRECISION),
         "metadata": metadata if metadata else {},
     }

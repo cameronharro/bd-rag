@@ -4,7 +4,7 @@ import re
 
 import numpy as np
 from sentence_transformers import SentenceTransformer
-from lib.search_utils import CHUNK_EMBEDDINGS_PATH, CHUNK_METADATA_PATH, ChunkMetadata, Movie, MOVIE_EMBEDDINGS_PATH, SearchResult, format_search_result, load_movies
+from lib.search_utils import CHUNK_EMBEDDINGS_PATH, CHUNK_METADATA_PATH, ChunkMetadata, ChunkScore, Movie, MOVIE_EMBEDDINGS_PATH, SearchResult, format_search_result, load_movies
 
 class SemanticSearch:
     def __init__(self, model_name: str = "all-MiniLM-L6-v2") -> None:
@@ -90,6 +90,33 @@ class ChunkedSemanticSearch(SemanticSearch):
             return self.chunk_embeddings
         return self.build_chunk_embeddings(documents)
 
+    def search_chunks(self, query: str, limit: int = 10) -> list[SearchResult]:
+        if self.chunk_embeddings is None or self.chunk_metadata is None:
+            raise ValueError("Missing chunk embeddings or metadata. Call load_or_create_chunk_embeddings first")
+        query_embedding = self.generate_embedding(query)
+        highest_chunk_score_map: dict[int, float] = {}
+        highest_chunk_metadata_map: dict[int, ChunkMetadata] = {}
+        for i, chunk_embedding in enumerate(self.chunk_embeddings):
+            metadata = self.chunk_metadata[i]
+            score = cosine_similarity(chunk_embedding, query_embedding)
+            curr_movie_score = highest_chunk_score_map.get(metadata["movie_idx"], 0)
+            if score > curr_movie_score:
+                highest_chunk_score_map[metadata["movie_idx"]] = score
+                highest_chunk_metadata_map[metadata["movie_idx"]] = metadata
+        ranked_scores = sorted(highest_chunk_score_map.items(), key=lambda item: item[1], reverse=True)[:limit]
+        def get_search_result_from_score(score_tuple: tuple[int, float]) -> SearchResult:
+            if self.documents == None:
+                raise ValueError("self.documents not loaded")
+            movie: Movie = self.documents[score_tuple[0]]
+            return format_search_result(
+                    movie["id"],
+                    movie["title"],
+                    movie["description"],
+                    score_tuple[1],
+                    metadata=highest_chunk_metadata_map.get(score_tuple[0], {}),
+                )
+        return [get_search_result_from_score(x) for x in ranked_scores]
+
 
 def verify_model():
     sem_search = SemanticSearch()
@@ -170,3 +197,11 @@ def embed_chunks():
     movies = load_movies()
     chunked_sem_search = ChunkedSemanticSearch()
     print(f"Generated {len(chunked_sem_search.load_or_create_chunk_embeddings(movies))} chunked embeddings")
+
+def search_chunked(query: str, limit: int):
+    chunked_sem_search = ChunkedSemanticSearch()
+    chunked_sem_search.load_or_create_chunk_embeddings(load_movies())
+    for i, result in enumerate(chunked_sem_search.search_chunks(query, limit)):
+        print(f"\n{i+1}. {result["title"]} (score: {result["score"]:.4f})")
+        print(f"    {result["document"]}...")
+    
