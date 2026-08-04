@@ -16,6 +16,11 @@ class SearchResult(TypedDict):
     score: float
     metadata: dict[str, Any]
 
+class ChunkMetadata(TypedDict):
+    movie_idx: int
+    chunk_idx: int
+    total_chunks: int
+
 
 class GoldenTestCase(TypedDict):
     query: str

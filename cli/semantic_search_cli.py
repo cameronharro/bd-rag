@@ -30,6 +30,7 @@ def main() -> None:
     chunk_parser.add_argument("--max-chunk-size", type=int, default=4, help="The number of sentences to include in each chunk")
     chunk_parser.add_argument("--overlap", type=int, default=0, help="The number of sentences that should be included as overlap in each chunk")
 
+    subparsers.add_parser("embed_chunks", help="Creates vector embeddings for semantically-chunked data")
 
     args = parser.parse_args()
     match args.command:
@@ -47,6 +48,8 @@ def main() -> None:
             semantic_search.chunk(args.text, args.chunk_size, args.overlap)
         case "semantic_chunk":
             semantic_search.semantic_chunk(args.text, args.max_chunk_size, args.overlap)
+        case "embed_chunks":
+            semantic_search.embed_chunks()
         case _:
             parser.print_help()
 
