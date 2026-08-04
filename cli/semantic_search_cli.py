@@ -20,6 +20,10 @@ def main() -> None:
     search_parser.add_argument("query", type=str, help="The query to be embedded")
     search_parser.add_argument("--limit", type=int, default=5, help="The number of results to show")
 
+    chunk_parser = subparsers.add_parser("chunk", help="Chunk provided text")
+    chunk_parser.add_argument("text", type=str, help="The text to be chunked")
+    chunk_parser.add_argument("--chunk-size", type=int, default=200, help="The number of words to include in each chunk")
+
     args = parser.parse_args()
     match args.command:
         case "verify":
@@ -32,6 +36,8 @@ def main() -> None:
             semantic_search.embed_query_text(args.query)
         case "search":
             semantic_search.search(args.query, args.limit)
+        case "chunk":
+            semantic_search.chunk(args.text, args.chunk_size)
         case _:
             parser.print_help()
 

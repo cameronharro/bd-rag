@@ -97,3 +97,18 @@ def search(query: str, limit: int):
     results = sem_search.search(query, limit)
     for i, result in enumerate(results):
         print(f"{i + 1}. {result["title"]} (score: {result["score"]})\n  {result["document"]}\n")
+
+def chunk(text: str, chunk_size: int):
+    text = text.strip()
+    words = text.split(" ")
+    result: list[str] = []
+    start = 0
+    while start < len(words):
+        chunk_length = min(chunk_size, len(words) - start)
+        chunk = " ".join(words[start:start+chunk_length])
+        result.append(chunk)
+        start += chunk_length
+
+    print(f"Chunking {len(text)} characters")
+    for i, chunk in enumerate(result):
+        print(f"{i + 1}. {chunk}")
