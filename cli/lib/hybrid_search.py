@@ -1,6 +1,6 @@
 import os
 
-from cli.lib.search_utils import Movie, SearchResult
+from lib.search_utils import Movie, SearchResult
 
 from .keyword_search import InvertedIndex
 from .semantic_search import ChunkedSemanticSearch
@@ -25,3 +25,13 @@ class HybridSearch:
 
     def rrf_search(self, query: str, k: int, limit: int = 10) -> list[dict]:
         raise NotImplementedError("RRF hybrid search is not implemented yet.")
+
+
+def normalize(scores: list[float]):
+    if len(scores) is 0:
+        return
+    maximum = max(scores)
+    minimum = min(scores)
+    for _, score in enumerate(scores):
+        normalized_score = 1.0 if maximum is minimum else ((score - minimum) / (maximum - minimum))
+        print(f"* {normalized_score:.4f}")
