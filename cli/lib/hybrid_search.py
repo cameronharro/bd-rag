@@ -14,6 +14,14 @@ class HybridSearchResult( TypedDict ):
     document: str
     id: int
 
+class RRFSearchResult( TypedDict ):
+    keyword_rank: int
+    semantic_rank: int
+    hybrid_score: float
+    title: str
+    document: str
+    id: int
+
 class HybridSearch:
     def __init__(self, documents: list[Movie]) -> None:
         self.documents = documents
@@ -64,14 +72,38 @@ class HybridSearch:
                         }
         return sorted(movie_map.values(), key=lambda item: item["hybrid_score"], reverse=True)[:limit]
 
-        
-
-    def rrf_search(self, query: str, k: int, limit: int = 10) -> list[dict]:
-        raise NotImplementedError("RRF hybrid search is not implemented yet.")
+    def rrf_search(self, query: str, k: int, limit: int = 5) -> list[HybridSearchResult]:
+        keyword_results = sorted(self._bm25_search(query, limit * 500), key=lambda item: item["score"], reverse=True)
+        semantic_results = sorted(self.semantic_search.search_chunks(query, limit * 500), key=lambda item: item["score"], reverse=True)
+        movie_map: dict[int, HybridSearchResult] = {}
+        for i, k_result in enumerate(keyword_results, 1):
+            movie_map[k_result["id"]] = {
+                    "keyword_score": i,
+                    "semantic_score": 0.0,
+                    "hybrid_score": rrf_score(i, k),
+                    "title": k_result["title"],
+                    "document": k_result["document"],
+                    "id": k_result["id"]
+                    }
+        for i, s_result in enumerate(semantic_results, 1):
+            existing_entry = movie_map.get(s_result["id"], None)
+            if existing_entry is not None:
+                existing_entry["semantic_score"] = i
+                existing_entry["hybrid_score"] = rrf_score(i, k) + rrf_score(int(existing_entry["keyword_score"]), k)
+            else:
+                movie_map[s_result["id"]] = {
+                        "keyword_score": 0.0,
+                        "semantic_score": i,
+                        "hybrid_score": rrf_score(i, k),
+                        "title": s_result["title"],
+                        "document": s_result["document"],
+                        "id": s_result["id"]
+                        }
+        return sorted(movie_map.values(), key=lambda item: item["hybrid_score"], reverse=True)[:limit]
 
 
 def normalize(scores: list[float]) -> list[float]:
-    if len(scores) is 0:
+    if len(scores) == 0:
         return []
     maximum = max(scores)
     minimum = min(scores)
@@ -83,3 +115,6 @@ def normalize(scores: list[float]) -> list[float]:
 
 def hybrid_score(bm25_score: float, semantic_score: float, alpha: float = 0.5) -> float:
     return alpha * bm25_score + (1 - alpha) * semantic_score
+
+def rrf_score(rank: int, k: int = 60) -> float:
+    return 1 / (k + rank)

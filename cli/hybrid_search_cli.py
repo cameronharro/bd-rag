@@ -15,6 +15,11 @@ def main() -> None:
     weighted_search_parser.add_argument("--alpha", type=float, default=0.5, help="A float between 0 and 1 that adjusts the weight given to different search methods. Higher -> more keyword-weighted")
     weighted_search_parser.add_argument("--limit", type=int, default=5, help="The number of results to return")
 
+    rrf_search_parser = subparsers.add_parser("rrf-search", help="Execute bm25 keyword search and semantic search in parallel, weighting with alpha")
+    rrf_search_parser.add_argument("query", type=str, help="The query to be searched for")
+    rrf_search_parser.add_argument("--k", type=int, default=60, help="A positive constant used to shape how rankings are weighted. A lower number leads to a sharper initial decline/more weight on higher-ranked items")
+    rrf_search_parser.add_argument("--limit", type=int, default=5, help="The number of results to return")
+
     args = parser.parse_args()
 
     match args.command:
@@ -26,7 +31,12 @@ def main() -> None:
             hyb_search = hybrid_search.HybridSearch(load_movies())
             results = hyb_search.weighted_search(args.query, args.alpha, args.limit)
             for i, result in enumerate(results):
-                print(f"{i+1}. {result["title"]}\n  Hybrid Score: {result["hybrid_score"]:.3f}\n  BM25: {result["keyword_score"]:.3f}, Semantic: {result["semantic_score"]:.3f}\n  {result["document"][:DOCUMENT_PREVIEW_LENGTH]}")
+                print(f"{i+1}. {result["title"]}\n  Hybrid Score: {result["hybrid_score"]:.3f}\n  BM25: {result["keyword_score"]:.3f}, Semantic: {result["semantic_score"]:.3f}\n  {result["document"][:DOCUMENT_PREVIEW_LENGTH]}...")
+        case "rrf-search":
+            hyb_search = hybrid_search.HybridSearch(load_movies())
+            results = hyb_search.rrf_search(args.query, args.k, args.limit)
+            for i, result in enumerate(results):
+                print(f"{i+1}. {result["title"]}\n  RRF Score: {result["hybrid_score"]:.3f}\n  BM25 Rank: {result["keyword_score"]}, Semantic Rank: {result["semantic_score"]}\n  {result["document"][:DOCUMENT_PREVIEW_LENGTH]}...")
         case _:
             parser.print_help()
 
