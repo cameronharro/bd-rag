@@ -2,6 +2,7 @@ import argparse
 
 from lib.search_utils import load_movies, DOCUMENT_PREVIEW_LENGTH
 from lib import hybrid_search
+from lib.llm import get_llm_client, enhancement_query
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Hybrid Search CLI")
@@ -19,6 +20,12 @@ def main() -> None:
     rrf_search_parser.add_argument("query", type=str, help="The query to be searched for")
     rrf_search_parser.add_argument("--k", type=int, default=60, help="A positive constant used to shape how rankings are weighted. A lower number leads to a sharper initial decline/more weight on higher-ranked items")
     rrf_search_parser.add_argument("--limit", type=int, default=5, help="The number of results to return")
+    rrf_search_parser.add_argument(
+        "--enhance",
+        type=str,
+        choices=["spell"],
+        help="Query enhancement method",
+    )
 
     args = parser.parse_args()
 
@@ -28,11 +35,22 @@ def main() -> None:
             for _, normalized_score in enumerate(scores):
                 print(f"* {normalized_score:.4f}")
         case "weighted-search":
+
             hyb_search = hybrid_search.HybridSearch(load_movies())
             results = hyb_search.weighted_search(args.query, args.alpha, args.limit)
             for i, result in enumerate(results):
                 print(f"{i+1}. {result["title"]}\n  Hybrid Score: {result["hybrid_score"]:.3f}\n  BM25: {result["keyword_score"]:.3f}, Semantic: {result["semantic_score"]:.3f}\n  {result["document"][:DOCUMENT_PREVIEW_LENGTH]}...")
         case "rrf-search":
+            query = args.query
+            if args.enhance != "" and args.enhance is not None:
+                response = get_llm_client().chat.completions.create(
+                    model="openrouter/free",
+                    messages=[{"role": "user", "content": enhancement_query(query, args.enhance)}],
+                )
+                enhanced_query = response.choices[0].message.content
+                print(f"Enhanced query ({args.enhance}): '{query}' -> '{enhanced_query}'")
+                query = enhanced_query
+
             hyb_search = hybrid_search.HybridSearch(load_movies())
             results = hyb_search.rrf_search(args.query, args.k, args.limit)
             for i, result in enumerate(results):
