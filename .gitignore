@@ -12,3 +12,6 @@ wheels/
 # Generated data
 data/
 cache/
+
+# Credentials
+.env

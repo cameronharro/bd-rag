@@ -5,7 +5,9 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "dotenv>=0.9.9",
     "nltk==3.9.1",
     "numpy==2.3.3",
+    "openai>=3.5.0",
     "sentence-transformers>=5.6.1",
 ]
